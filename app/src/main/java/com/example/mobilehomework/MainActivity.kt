@@ -108,10 +108,10 @@ fun HomeScreen() {
                             IconButton(
                                 onClick = { showSortMenu = true }
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Sort,
-                                    contentDescription = "Сортировка"
-                                )
+                            Icon(
+                                imageVector = Icons.Default.SwapVert,
+                                contentDescription = "Сортировка"
+                            )
                             }
                             DropdownMenu(
                                 expanded = showSortMenu,
