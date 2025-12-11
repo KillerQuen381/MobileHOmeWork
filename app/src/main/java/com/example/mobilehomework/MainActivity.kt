@@ -26,6 +26,10 @@ enum class FilterType {
     ALL, ACTIVE, COMPLETED
 }
 
+enum class SortType {
+    DATE_NEWEST, DATE_OLDEST, ALPHABETICAL_AZ, ALPHABETICAL_ZA, STATUS_ACTIVE_FIRST, STATUS_COMPLETED_FIRST
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,17 +56,19 @@ fun HomeScreen() {
     var tasks by remember { mutableStateOf(repository.loadTasks()) }
     var searchQuery by remember { mutableStateOf("") }
     var filterType by remember { mutableStateOf(FilterType.ALL) }
+    var sortType by remember { mutableStateOf(SortType.DATE_NEWEST) }
     var editingTaskId by remember { mutableStateOf<Long?>(null) }
     var editText by remember { mutableStateOf("") }
+    var showSortMenu by remember { mutableStateOf(false) }
 
     // Сохранение задач при изменении
     LaunchedEffect(tasks) {
         repository.saveTasks(tasks)
     }
 
-    // Фильтрация и поиск
-    val filteredTasks = remember(tasks, filterType, searchQuery) {
-        tasks.filter { task ->
+    // Фильтрация, поиск и сортировка
+    val filteredTasks = remember(tasks, filterType, searchQuery, sortType) {
+        val filtered = tasks.filter { task ->
             val matchesFilter = when (filterType) {
                 FilterType.ALL -> true
                 FilterType.ACTIVE -> !task.completed
@@ -70,6 +76,15 @@ fun HomeScreen() {
             }
             val matchesSearch = task.text.contains(searchQuery, ignoreCase = true)
             matchesFilter && matchesSearch
+        }
+        
+        when (sortType) {
+            SortType.DATE_NEWEST -> filtered.sortedByDescending { it.id }
+            SortType.DATE_OLDEST -> filtered.sortedBy { it.id }
+            SortType.ALPHABETICAL_AZ -> filtered.sortedBy { it.text.lowercase() }
+            SortType.ALPHABETICAL_ZA -> filtered.sortedByDescending { it.text.lowercase() }
+            SortType.STATUS_ACTIVE_FIRST -> filtered.sortedBy { it.completed }
+            SortType.STATUS_COMPLETED_FIRST -> filtered.sortedByDescending { it.completed }
         }
     }
 
@@ -89,6 +104,63 @@ fun HomeScreen() {
                 ),
                 actions = {
                     if (tasks.isNotEmpty()) {
+                        Box {
+                            IconButton(
+                                onClick = { showSortMenu = true }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Sort,
+                                    contentDescription = "Сортировка"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("По дате (новые)") },
+                                    onClick = {
+                                        sortType = SortType.DATE_NEWEST
+                                        showSortMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("По дате (старые)") },
+                                    onClick = {
+                                        sortType = SortType.DATE_OLDEST
+                                        showSortMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("По алфавиту (А-Я)") },
+                                    onClick = {
+                                        sortType = SortType.ALPHABETICAL_AZ
+                                        showSortMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("По алфавиту (Я-А)") },
+                                    onClick = {
+                                        sortType = SortType.ALPHABETICAL_ZA
+                                        showSortMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Активные первыми") },
+                                    onClick = {
+                                        sortType = SortType.STATUS_ACTIVE_FIRST
+                                        showSortMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Выполненные первыми") },
+                                    onClick = {
+                                        sortType = SortType.STATUS_COMPLETED_FIRST
+                                        showSortMenu = false
+                                    }
+                                )
+                            }
+                        }
                         IconButton(
                             onClick = {
                                 tasks = emptyList()
